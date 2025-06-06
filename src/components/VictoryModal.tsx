@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, RotateCcw, Play, Pause, Volume2, Loader2 } from 'lucide-react';
+import { Home, RotateCcw, Play, Pause, Volume2, Loader2, ArrowLeft } from 'lucide-react';
 import { useAudio } from '../hooks/useAudio';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface VictoryModalProps {
   image: {
@@ -15,6 +16,7 @@ interface VictoryModalProps {
   isNewBest: boolean;
   onReplay: () => void;
   onHome: () => void;
+  onBack?: () => void; // Optional back button callback
 }
 
 const VictoryModal: React.FC<VictoryModalProps> = ({
@@ -23,10 +25,12 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
   moves,
   isNewBest,
   onReplay,
-  onHome
+  onHome,
+  onBack
 }) => {
+  const { t } = useLanguage();
   const [showConfetti, setShowConfetti] = useState(true);
-  const audio = useAudio(image.audioUrl);  useEffect(() => {
+  const audio = useAudio(image.audioUrl);useEffect(() => {
     const timer = setTimeout(() => {
       setShowConfetti(false);
     }, 3000);
@@ -183,9 +187,7 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
                 </p>
               </div>
             </div>
-          )}
-
-          {/* Action Buttons */}
+          )}          {/* Action Buttons */}
           <div className="flex gap-4">
             <button
               onClick={onReplay}
@@ -194,6 +196,15 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
               <RotateCcw className="w-5 h-5" />
               <span>Chơi lại</span>
             </button>
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl py-4 hover:shadow-lg transition-all duration-300 hover:scale-105"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Quay lại</span>
+              </button>
+            )}
             <button
               onClick={onHome}
               className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-2xl py-4 hover:shadow-lg transition-all duration-300 hover:scale-105"

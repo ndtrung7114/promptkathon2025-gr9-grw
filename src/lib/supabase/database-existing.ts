@@ -32,6 +32,7 @@ export interface UserProfile {
   favorite_topic: 'history' | 'culture' | null;
   skill_level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   role: UserRole; // Added admin role support
+  is_premium: boolean; // Premium user status
 }
 
 export interface GameImage {

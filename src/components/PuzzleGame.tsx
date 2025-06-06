@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GameTopic, DifficultyLevel } from './GameLayout';
-import { ArrowLeft, Home, Eye } from 'lucide-react';
+import { ArrowLeft, Home, Eye, Crown, X } from 'lucide-react';
 import VictoryModal from './VictoryModal';
 import { Milestone } from '../data/campaigns';
-import backgroundPuzzleImage from '../assets/images/backgroundPuzzle.jpg';
 import cuteCatImage from '../assets/images/anh-meo-cute-nhat-15.jpg';
 import { milestoneImageService, type GameImage } from '../lib/supabase/milestoneImageService';
+import { useUser } from '../contexts/UserContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import LanguageToggle from './LanguageToggle';
+import PremiumUpgradeModal from './PremiumUpgradeModal';
 
 interface PuzzlePiece {
   id: number;
@@ -32,8 +35,7 @@ interface PuzzleGameProps {
   };
 }
 
-const PuzzleGame: React.FC<PuzzleGameProps> = ({
-  topic,
+const PuzzleGame: React.FC<PuzzleGameProps> = ({  topic,
   difficulty,
   milestoneId,
   milestoneData,
@@ -43,11 +45,13 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({
   currentBestTime,
   gameState,
 }) => {
-  const [pieces, setPieces] = useState<PuzzlePiece[]>([]);
+  const { user } = useUser();
+  const { t } = useLanguage();const [pieces, setPieces] = useState<PuzzlePiece[]>([]);
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isComplete, setIsComplete] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [draggedPiece, setDraggedPiece] = useState<number | null>(null);
   const [moves, setMoves] = useState(0);
   const [hints, setHints] = useState(0);
@@ -200,9 +204,33 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({
           // Fallback to hardcoded images on error
           const imageSet = fallbackImages.history;
           selectedImage = imageSet[Math.floor(Math.random() * imageSet.length)];
-        }
-      } else {
-        // For culture or other topics, use database images with milestone_id or fallback
+        }      } else if (topic === 'culture') {
+        // For culture topic, get all images from database by topic (no milestone_id requirement)
+        try {
+          console.log('Fetching culture images from database (all images with topic=culture)');
+          const cultureImages = await milestoneImageService.getImagesByTopicAll('culture');
+          
+          if (cultureImages.length > 0) {
+            const randomImage = cultureImages[Math.floor(Math.random() * cultureImages.length)];
+            selectedImage = {
+              url: randomImage.image_url,
+              title: randomImage.title,
+              description: randomImage.description || '',
+              audioUrl: randomImage.audio_url,
+            };
+            console.log('SUCCESS: Using random culture image from database (all culture images):', selectedImage);          } else {
+            // Fallback to hardcoded images if no culture images in database
+            console.warn('No culture images in database, using fallback');
+            const imageSet = fallbackImages.culture;
+            selectedImage = imageSet[Math.floor(Math.random() * imageSet.length)];
+          }
+        } catch (error) {
+          console.error('Error fetching culture images:', error);
+          // Fallback to hardcoded images on error
+          const imageSet = fallbackImages.culture;
+          selectedImage = imageSet[Math.floor(Math.random() * imageSet.length)];
+        }      } else {
+        // For other topics, use database images with milestone_id or fallback
         try {
           console.log(`Fetching ${topic} images from database (milestone-linked only)`);
           const topicImages = await milestoneImageService.getImagesByTopic(topic as 'history' | 'culture');
@@ -219,12 +247,12 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({
           } else {
             // Fallback to hardcoded images if no milestone-linked database images
             console.log(`No milestone-linked ${topic} images in database, using fallback`);
-            const imageSet = fallbackImages[topic] || fallbackImages.history;
+            const imageSet = topic === 'history' ? fallbackImages.history : fallbackImages.culture;
             selectedImage = imageSet[Math.floor(Math.random() * imageSet.length)];
           }        } catch (error) {
           console.error(`Error fetching ${topic} images:`, error);
           // Fallback to hardcoded images on error
-          const imageSet = fallbackImages[topic] || fallbackImages.history;
+          const imageSet = topic === 'history' ? fallbackImages.history : fallbackImages.culture;
           selectedImage = imageSet[Math.floor(Math.random() * imageSet.length)];
         }
       }
@@ -369,21 +397,26 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({
 
   const handleDragEnd = () => {
     setDraggedPiece(null);
-  };
-  const showPreviewImage = () => {
+  };  const showPreviewImage = () => {
+    // For culture mode, only premium users can use preview
+    if (topic === 'culture' && !user?.isPremium) {
+      // Show premium modal instead of alert
+      setShowPremiumModal(true);
+      return;
+    }
+    
     setShowPreview(true);
     setHints(prev => {
       const newHints = prev + 1;
       gameState?.updateHints(newHints);
       return newHints;
     });
-    if (previewTimeoutRef.current) {
-      clearTimeout(previewTimeoutRef.current);
-    }
-    previewTimeoutRef.current = setTimeout(() => {
-      setShowPreview(false);
-    }, 3000);
-  };  const resetPuzzle = () => {
+    // Remove automatic timeout - user will close manually
+  };
+
+  const closePreview = () => {
+    setShowPreview(false);
+  };const resetPuzzle = () => {
     const totalPieces = difficulty * difficulty;
     
     // Create shuffled positions array
@@ -410,53 +443,65 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({
     <div 
       className="min-h-screen flex flex-col p-6 bg-cover bg-center bg-no-repeat relative"
       style={{
-        backgroundImage: `url('/src/assets/images/backgroundPuzzle.jpg')`,
+        backgroundImage: `url('https://res.cloudinary.com/dfhodnqig/image/upload/v1749190692/backgroundPuzzle_q6q6ub.jpg')`,
         backgroundAttachment: 'fixed'
       }}
     >
       {/* Background overlay for better readability */}
       <div className="absolute inset-0 bg-black/10 pointer-events-none"></div>
       
-      {/* Content wrapper with relative positioning */}
-      <div className="relative z-10 flex flex-col min-h-full">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      {/* Fixed Header Controls */}
+      <div className="fixed top-4 left-0 right-0 z-50 flex justify-between items-start px-4">
+        {/* Language Toggle Button - Left side */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg">
+          <LanguageToggle />
+        </div>
+        
+        {/* Navigation Buttons - Right side */}
+        <div className="flex items-center gap-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2">
           <button
             onClick={onBack}
-            className="bg-white/80 backdrop-blur-sm rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors duration-200"
           >
-            <ArrowLeft className="w-6 h-6 text-gray-700" />
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">{t('common.back')}</span>
           </button>
+          <div className="w-px h-6 bg-gray-300"></div>
           <button
             onClick={onHome}
-            className="bg-white/80 backdrop-blur-sm rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors duration-200"
           >
-            <Home className="w-6 h-6 text-gray-700" />
+            <Home className="w-5 h-5" />
+            <span className="hidden sm:inline">{t('common.home')}</span>
           </button>
         </div>
-
-        <div className="flex items-center gap-6 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{formatTime(currentTime)}</div>
-            <div className="text-xs text-gray-500">Thời gian</div>
-          </div>
-          <div className="w-px h-8 bg-gray-300"></div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{moves}</div>
-            <div className="text-xs text-gray-500">Số lần di chuyển</div>
-          </div>
-          {currentBestTime && (
-            <>
-              <div className="w-px h-8 bg-gray-300"></div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-green-600">{formatTime(currentBestTime)}</div>
-                <div className="text-xs text-gray-500">BEST</div>
-              </div>
-            </>
-          )}
-        </div>
       </div>
+      
+      {/* Content wrapper with relative positioning */}
+      <div className="relative z-10 flex flex-col min-h-full mt-20">
+        {/* Game Stats Bar */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center gap-6 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{formatTime(currentTime)}</div>
+              <div className="text-xs text-gray-500">{t('game.time')}</div>
+            </div>
+            <div className="w-px h-8 bg-gray-300"></div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{moves}</div>
+              <div className="text-xs text-gray-500">{t('game.moves')}</div>
+            </div>
+            {currentBestTime && (
+              <>
+                <div className="w-px h-8 bg-gray-300"></div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-green-600">{formatTime(currentBestTime)}</div>
+                  <div className="text-xs text-gray-500">{t('game.best')}</div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
 
       {/* Main Game Area */}
       <div className="flex-1 flex items-center justify-center">
@@ -507,40 +552,67 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({
                 );
               })}
             </div>
-          </div>
-
-          {/* Preview Overlay */}
+          </div>          {/* Preview Overlay */}
           {showPreview && (
             <div className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center">
+              {/* Close button */}
+              <button
+                onClick={closePreview}
+                className="absolute top-4 right-4 z-30 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              >
+                <X className="w-6 h-6 text-gray-700" />
+              </button>
               <img
                 src={currentImage.url}
-                alt="Preview"
+                alt={t('game.preview')}
                 className="max-w-full max-h-full rounded-2xl opacity-75"
                 onError={() => console.error('Failed to load preview image')}
               />
             </div>
           )}
         </div>
-      </div>
-
-      {/* Bottom Controls */}
-      <div className="flex items-center justify-center gap-4 mt-6">
-        <button
-          onClick={showPreviewImage}
-          className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-        >
-          <Eye className="w-5 h-5" />
-          <span>Xem trước</span>
-        </button>
-        <button
-          onClick={resetPuzzle}
-          className="bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-        >
-          Xáo trộn lại
-        </button>
-      </div>
-
-      {/* Victory Modal */}
+      </div>      {/* Bottom Controls - Better organized layout */}
+      <div className="flex flex-col items-center gap-4 mt-6">
+        {/* Primary Action Buttons Row */}
+        <div className="flex items-center justify-center gap-4">
+          {/* Preview button - only show for history mode OR premium users in culture mode */}
+          {(topic === 'history' || (topic === 'culture' && user?.isPremium)) && (
+            <button
+              onClick={showPreviewImage}
+              className={`flex items-center gap-2 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 ${
+                topic === 'culture' && user?.isPremium 
+                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' 
+                  : 'bg-white/80 text-gray-700'
+              }`}
+            >
+              <Eye className="w-5 h-5" />
+              <span>{t('game.preview')}</span>
+              {topic === 'culture' && user?.isPremium && (
+                <Crown className="w-4 h-4 ml-1" />
+              )}
+            </button>
+          )}
+          
+          {/* Show locked preview button for non-premium users in culture mode */}
+          {topic === 'culture' && !user?.isPremium && (
+            <button
+              onClick={showPreviewImage}
+              className="flex items-center gap-2 bg-gray-300/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg cursor-not-allowed opacity-60"
+            >
+              <Eye className="w-5 h-5" />
+              <span>{t('game.preview')}</span>
+              <Crown className="w-4 h-4 ml-1 text-yellow-500" />
+            </button>
+          )}
+          
+          <button
+            onClick={resetPuzzle}
+            className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-gray-700"
+          >
+            <span>{t('game.shuffle')}</span>
+          </button>
+        </div>
+      </div>{/* Victory Modal */}
       {isComplete && currentImage && (
         <VictoryModal
           image={currentImage}
@@ -548,9 +620,19 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({
           moves={moves}
           isNewBest={!currentBestTime || currentTime < currentBestTime}
           onReplay={resetPuzzle}
-          onHome={onHome}        />
-      )}
+          onHome={onHome}
+          onBack={onBack}
+        />      )}
       </div> {/* Close content wrapper */}
+        {/* Premium Upgrade Modal */}
+      <PremiumUpgradeModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        onUpgrade={() => {
+          setShowPremiumModal(false);
+          console.log('Navigate to premium upgrade');
+        }}
+      />
     </div>
   );
 };

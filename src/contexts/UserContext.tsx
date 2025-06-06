@@ -11,6 +11,7 @@ export interface User {
   avatar_url?: string;
   role: UserRole;
   isAdmin: boolean;
+  isPremium: boolean;
 }
 
 interface UserContextType {
@@ -42,19 +43,27 @@ const mapSupabaseUserToUser = async (supabaseUser: SupabaseUser): Promise<User> 
     const rolePromise = adminService.getUserRole(supabaseUser.id);
     const isAdminPromise = adminService.isAdmin(supabaseUser.id);
     
-    // Set a 5-second timeout for role fetching
-    const timeoutPromise = new Promise<{ role: UserRole; isAdmin: boolean }>((_, reject) => {
-      setTimeout(() => reject(new Error('Role fetch timeout')), 5000);
+    // Fetch user profile to get premium status
+    const profilePromise = supabase
+      .from('profiles')
+      .select('is_premium')
+      .eq('id', supabaseUser.id)
+      .single();
+    
+    // Set a 5-second timeout for all data fetching
+    const timeoutPromise = new Promise<{ role: UserRole; isAdmin: boolean; isPremium: boolean }>((_, reject) => {
+      setTimeout(() => reject(new Error('User data fetch timeout')), 5000);
     });
     
-    const roleDataPromise = Promise.all([rolePromise, isAdminPromise]).then(([role, isAdmin]) => ({
+    const dataPromise = Promise.all([rolePromise, isAdminPromise, profilePromise]).then(([role, isAdmin, profileResult]) => ({
       role,
-      isAdmin
+      isAdmin,
+      isPremium: profileResult.data?.is_premium || false
     }));
     
-    const { role, isAdmin } = await Promise.race([roleDataPromise, timeoutPromise]);
+    const { role, isAdmin, isPremium } = await Promise.race([dataPromise, timeoutPromise]);
     
-    console.log('User role fetched:', { role, isAdmin });
+    console.log('User data fetched:', { role, isAdmin, isPremium });
     
     return {
       id: supabaseUser.id,
@@ -63,11 +72,12 @@ const mapSupabaseUserToUser = async (supabaseUser: SupabaseUser): Promise<User> 
       avatar_url: supabaseUser.user_metadata?.avatar_url,
       hasAdvantage: true,
       role,
-      isAdmin
+      isAdmin,
+      isPremium
     };
   } catch (error) {
-    console.error('Error fetching user role, using defaults:', error);
-    // Fallback to default values if role fetching fails
+    console.error('Error fetching user data, using defaults:', error);
+    // Fallback to default values if data fetching fails
     return {
       id: supabaseUser.id,
       email: supabaseUser.email || '',
@@ -75,7 +85,8 @@ const mapSupabaseUserToUser = async (supabaseUser: SupabaseUser): Promise<User> 
       avatar_url: supabaseUser.user_metadata?.avatar_url,
       hasAdvantage: true,
       role: 'user',
-      isAdmin: false
+      isAdmin: false,
+      isPremium: false
     };
   }
 };

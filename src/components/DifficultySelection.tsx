@@ -1,7 +1,8 @@
-
 import React from 'react';
 import { GameTopic, DifficultyLevel, BestTimes } from './GameLayout';
 import { ArrowLeft } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import LanguageToggle from './LanguageToggle';
 
 interface DifficultySelectionProps {
   topic: GameTopic;
@@ -16,6 +17,7 @@ const DifficultySelection: React.FC<DifficultySelectionProps> = ({
   onBack,
   bestTimes
 }) => {
+  const { t } = useLanguage();
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -25,40 +27,58 @@ const DifficultySelection: React.FC<DifficultySelectionProps> = ({
   const getBestTime = (difficulty: DifficultyLevel) => {
     const key = `${topic}-${difficulty}`;
     return bestTimes[key] ? formatTime(bestTimes[key]) : null;
-  };  const difficulties = [
-    { level: 2 as DifficultyLevel, pieces: 4, label: 'Người mới', description: 'Hoàn hảo cho một câu đố nhanh' },
-    { level: 3 as DifficultyLevel, pieces: 9, label: 'Trung cấp', description: 'Một thử thách cân bằng' },
-    { level: 4 as DifficultyLevel, pieces: 16, label: 'Nâng cao', description: 'Dành cho bậc thầy câu đố' }
-  ];
+  };
+
+  const getDifficulties = () => {
+    // All topics now support 2x2, 3x3, and 4x4 modes
+    return [
+      { level: 2 as DifficultyLevel, pieces: 4, label: t('difficulty.beginner'), description: t('difficulty.beginner.desc') },
+      { level: 3 as DifficultyLevel, pieces: 9, label: t('difficulty.intermediate'), description: t('difficulty.intermediate.desc') },
+      { level: 4 as DifficultyLevel, pieces: 16, label: t('difficulty.advanced'), description: t('difficulty.advanced.desc') }
+    ];
+  };
+  
+  const difficulties = getDifficulties();
   const topicInfo = {
     history: {
-      title: 'Historical Vietnam',
-      description: 'Explore iconic landmarks and moments from Vietnam\'s rich past',
+      title: t('home.history.title'),
+      description: t('home.history.description'),
       icon: '📜',
       color: 'from-red-500 to-red-700'
     },
     culture: {
-      title: 'Văn hóa Việt Nam',
-      description: 'Khám phá nghệ thuật truyền thống, lễ hội và di sản văn hóa phong phú',
+      title: t('home.culture.title'),
+      description: t('home.culture.description'),
       icon: '🎨',
       color: 'from-yellow-500 to-orange-600'
     }
   };
 
   const currentTopic = topicInfo[topic];
-
+  
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6">
-      {/* Back Button */}
-      <button
-        onClick={onBack}
-        className="absolute top-6 left-6 bg-white/80 backdrop-blur-sm rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-      >
-        <ArrowLeft className="w-6 h-6 text-gray-700" />
-      </button>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
+      {/* Fixed Header Controls */}
+      <div className="fixed top-4 left-0 right-0 z-50 flex justify-between items-start px-4">
+        {/* Language Toggle Button - Left side */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg">
+          <LanguageToggle />
+        </div>
+        
+        {/* Back Button - Right side for better balance */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors duration-200"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">{t('common.back')}</span>
+          </button>
+        </div>
+      </div>
 
       {/* Topic Header */}
-      <div className="text-center mb-12 animate-gentle-float">
+      <div className="text-center mb-12 animate-gentle-float mt-20">
         <div className={`w-20 h-20 mx-auto mb-6 bg-gradient-to-br ${currentTopic.color} rounded-full flex items-center justify-center shadow-lg`}>
           <div className="text-white text-3xl">{currentTopic.icon}</div>
         </div>
@@ -83,7 +103,8 @@ const DifficultySelection: React.FC<DifficultySelectionProps> = ({
                 index === 1 ? 'transform md:scale-110' : ''
               }`}
             >
-              <div className="text-center">                {/* Difficulty Grid Visual */}
+              <div className="text-center">
+                {/* Difficulty Grid Visual */}
                 <div className="mb-6 flex justify-center">
                   <div 
                     className="gap-1 w-16 h-16"
@@ -105,14 +126,14 @@ const DifficultySelection: React.FC<DifficultySelectionProps> = ({
 
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">{diff.label}</h2>
                 <p className="text-4xl font-bold text-gray-900 mb-3">{diff.level}×{diff.level}</p>
-                <p className="text-lg text-gray-600 mb-3">{diff.pieces} pieces</p>
+                <p className="text-lg text-gray-600 mb-3">{diff.pieces} {t('difficulty.pieces')}</p>
                 <p className="text-sm text-gray-500 mb-4">{diff.description}</p>
 
                 {/* Best Time Display */}
                 {bestTime && (
                   <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-full px-4 py-2 inline-block">
                     <span className="text-sm font-semibold text-green-700">
-                      Best: {bestTime}
+                      {t('puzzle.best')}: {bestTime}
                     </span>
                   </div>
                 )}
@@ -126,7 +147,7 @@ const DifficultySelection: React.FC<DifficultySelectionProps> = ({
       </div>
 
       <div className="text-center mt-8 text-gray-600">
-        <p>Chọn kích thước câu đố của bạn: ít mảnh ghép hơn cho một giải quyết nhanh, nhiều mảnh ghép hơn cho một thử thách</p>
+        <p>{t('difficulty.choose')}</p>
       </div>
     </div>
   );

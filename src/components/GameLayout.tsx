@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import HomeScreen from './HomeScreen';
 import DifficultySelection from './DifficultySelection';
 import PuzzleGame from './PuzzleGame';
@@ -7,9 +8,12 @@ import MilestoneSelection from './MilestoneSelection';
 import AuthModal from './AuthModal';
 import CoverPage from './CoverPage';
 import { UserProvider, useUser } from '../contexts/UserContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useGameState } from '../hooks/useGameState';
 import { useCampaign } from '../hooks/useCampaign';
 import { markMilestoneCompleted as markMilestoneCompletedDB } from '../lib/supabase/gameProgressService';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { User, LogOut, Crown, Shield } from 'lucide-react';
 
 export type GameTopic = 'history' | 'culture';
 export type DifficultyLevel = 2 | 3 | 4;
@@ -21,6 +25,7 @@ export interface BestTimes {
 type GameScreen = 'home' | 'topic' | 'difficulty' | 'puzzle' | 'campaigns' | 'milestones';
 
 const GameLayoutInner = () => {
+  const navigate = useNavigate();
   const [currentScreen, setCurrentScreen] = useState<GameScreen>('home');
   const [selectedTopic, setSelectedTopic] = useState<GameTopic | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | null>(null);
@@ -32,6 +37,7 @@ const GameLayoutInner = () => {
     mode: 'login'
   });
   const { user, loading, logout } = useUser();
+  const { t } = useLanguage();
   const gameState = useGameState();
   const { campaign: selectedCampaignData } = useCampaign(selectedCampaign || '');
 
@@ -50,14 +56,13 @@ const GameLayoutInner = () => {
       const localBestTimes = JSON.parse(savedTimes);
       // The useGameState hook will handle syncing these with the database
     }
-  }, [user]);
-  // Show loading screen while authentication is being checked - moved after all hooks
+  }, [user]);  // Show loading screen while authentication is being checked - moved after all hooks
   if (loading) {
     return (
       <div className="min-h-screen watercolor-bg flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -224,32 +229,86 @@ const GameLayoutInner = () => {
   };
 
   return (
-    <div className="min-h-screen watercolor-bg">
-      {/* User Menu */}
+    <div className="min-h-screen watercolor-bg">      {/* Profile Menu */}
       {user && (
-        <div className="absolute top-6 right-6 z-10">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-lg group relative">
-            <div className="flex items-center gap-3">
-              {user.avatar_url && (
-                <img 
-                  src={user.avatar_url} 
-                  alt="Profile"
-                  className="w-8 h-8 rounded-full"
-                />
-              )}
-              <span className="text-sm text-gray-600">
-                {user.name || user.email} {user.hasAdvantage && '👑'}
-              </span>
-              <button
-                onClick={logout}
-                className="text-xs text-gray-500 hover:text-red-600 ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                Logout
+        <div className="absolute top-6 right-6 z-50">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500/50">
+                {user.avatar_url ? (
+                  <img 
+                    src={user.avatar_url} 
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                )}
+                <span className="text-sm font-medium text-gray-700 hidden md:inline">
+                  {user.name?.split(' ')[0] || user.email?.split('@')[0]}
+                </span>
               </button>
-            </div>
-          </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5">
+                <div className="flex items-center gap-2">
+                  {user.avatar_url ? (
+                    <img 
+                      src={user.avatar_url} 
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user.name || user.email}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      {user.isPremium && (
+                        <span className="inline-flex items-center gap-1 text-xs text-yellow-600">
+                          <Crown className="w-3 h-3" />
+                          Premium
+                        </span>
+                      )}
+                      {user.isAdmin && (
+                        <span className="inline-flex items-center gap-1 text-xs text-red-600">
+                          <Shield className="w-3 h-3" />
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <DropdownMenuSeparator />              {user.isAdmin && (
+                <>
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/admin')}
+                    className="cursor-pointer"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Admin Panel
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem 
+                onClick={logout}
+                className="cursor-pointer text-red-600 focus:text-red-600"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      )}      {currentScreen === 'home' && (
+      )}{currentScreen === 'home' && (
         <HomeScreen 
           onTopicSelect={handleTopicSelect}
           bestTimes={gameState.bestTimes}
