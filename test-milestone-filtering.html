@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Milestone Images Filtering Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .result {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 3px;
+        white-space: pre-wrap;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 Milestone Images Filtering Test</h1>
+      <p>This page tests the milestone images filtering functionality.</p>
+
+      <div class="test-section">
+        <h3>1. Test All Milestone Images</h3>
+        <p>Fetches all images that have a valid milestone_id</p>
+        <button id="testAllMilestones">Test All Milestone Images</button>
+        <div id="result1" class="result" style="display: none"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>2. Test Specific Milestone</h3>
+        <p>Fetches images for a specific milestone ID</p>
+        <input
+          type="text"
+          id="milestoneId"
+          placeholder="Enter milestone ID (e.g., trung-sisters-1)"
+          style="padding: 8px; width: 300px"
+        />
+        <button id="testSpecificMilestone">Test Specific Milestone</button>
+        <div id="result2" class="result" style="display: none"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>3. Test Topic Filtering</h3>
+        <p>Fetches images by topic (only those with milestone_id)</p>
+        <select id="topicSelect" style="padding: 8px">
+          <option value="history">History</option>
+          <option value="culture">Culture</option>
+        </select>
+        <button id="testTopicFilter">Test Topic Filter</button>
+        <div id="result3" class="result" style="display: none"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>4. Test Random Image</h3>
+        <p>Fetches a random image for a specific milestone</p>
+        <input
+          type="text"
+          id="randomMilestoneId"
+          placeholder="Enter milestone ID for random image"
+          style="padding: 8px; width: 300px"
+        />
+        <button id="testRandomImage">Get Random Image</button>
+        <div id="result4" class="result" style="display: none"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      // Import Supabase client
+      import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js";
+
+      // Supabase configuration (update these with your credentials)
+      const SUPABASE_URL = "https://cusiltcmhkkcwynydpjy.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1c2lsdGNtaGtrY3d5bnlkcGp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMTQ4MzEsImV4cCI6MjA2NDU5MDgzMX0._mVVBVahWWtauZkqvkUnVtQNbtC_MqO_DzpvndNGyuc";
+
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // Milestone Image Service functions
+      const milestoneImageService = {
+        async getImagesWithMilestones() {
+          const { data, error } = await supabase
+            .from("game_images")
+            .select("*")
+            .eq("is_active", true)
+            .not("milestone_id", "is", null)
+            .order("created_at", { ascending: false });
+
+          if (error) throw error;
+          return data || [];
+        },
+
+        async getImagesByMilestoneId(milestoneId) {
+          const { data, error } = await supabase
+            .from("game_images")
+            .select("*")
+            .eq("milestone_id", milestoneId)
+            .eq("is_active", true)
+            .order("created_at", { ascending: false });
+
+          if (error) throw error;
+          return data || [];
+        },
+
+        async getImagesByTopic(topic) {
+          const { data, error } = await supabase
+            .from("game_images")
+            .select("*")
+            .eq("topic", topic)
+            .eq("is_active", true)
+            .not("milestone_id", "is", null)
+            .order("created_at", { ascending: false });
+
+          if (error) throw error;
+          return data || [];
+        },
+
+        async getRandomImageByMilestoneId(milestoneId) {
+          const images = await this.getImagesByMilestoneId(milestoneId);
+          if (images.length === 0) return null;
+          return images[Math.floor(Math.random() * images.length)];
+        },
+      };
+
+      // Helper functions
+      function showResult(elementId, content, isError = false) {
+        const element = document.getElementById(elementId);
+        element.style.display = "block";
+        element.textContent = content;
+        element.className = `result ${isError ? "error" : "success"}`;
+      }
+
+      function disableButton(buttonId, disabled = true) {
+        document.getElementById(buttonId).disabled = disabled;
+      }
+
+      // Test 1: All milestone images
+      document
+        .getElementById("testAllMilestones")
+        .addEventListener("click", async () => {
+          disableButton("testAllMilestones");
+          try {
+            const images =
+              await milestoneImageService.getImagesWithMilestones();
+            const result =
+              `✅ Found ${images.length} images with milestone_id\n\n` +
+              `Breakdown by topic:\n` +
+              `History: ${
+                images.filter((img) => img.topic === "history").length
+              }\n` +
+              `Culture: ${
+                images.filter((img) => img.topic === "culture").length
+              }\n\n` +
+              `Sample images:\n` +
+              images
+                .slice(0, 3)
+                .map((img) => `- ${img.title} (${img.milestone_id})`)
+                .join("\n");
+
+            showResult("result1", result);
+          } catch (error) {
+            showResult("result1", `❌ Error: ${error.message}`, true);
+          }
+          disableButton("testAllMilestones", false);
+        });
+
+      // Test 2: Specific milestone
+      document
+        .getElementById("testSpecificMilestone")
+        .addEventListener("click", async () => {
+          const milestoneId = document
+            .getElementById("milestoneId")
+            .value.trim();
+          if (!milestoneId) {
+            showResult("result2", "❌ Please enter a milestone ID", true);
+            return;
+          }
+
+          disableButton("testSpecificMilestone");
+          try {
+            const images = await milestoneImageService.getImagesByMilestoneId(
+              milestoneId
+            );
+            const result =
+              `✅ Found ${images.length} images for milestone: ${milestoneId}\n\n` +
+              images
+                .map(
+                  (img) =>
+                    `- ${img.title}\n  Topic: ${
+                      img.topic
+                    }\n  Created: ${new Date(
+                      img.created_at
+                    ).toLocaleDateString()}`
+                )
+                .join("\n\n");
+
+            showResult(
+              "result2",
+              result || `No images found for milestone: ${milestoneId}`
+            );
+          } catch (error) {
+            showResult("result2", `❌ Error: ${error.message}`, true);
+          }
+          disableButton("testSpecificMilestone", false);
+        });
+
+      // Test 3: Topic filtering
+      document
+        .getElementById("testTopicFilter")
+        .addEventListener("click", async () => {
+          const topic = document.getElementById("topicSelect").value;
+
+          disableButton("testTopicFilter");
+          try {
+            const images = await milestoneImageService.getImagesByTopic(topic);
+            const result =
+              `✅ Found ${images.length} ${topic} images with milestone_id\n\n` +
+              `Milestone IDs found:\n` +
+              [...new Set(images.map((img) => img.milestone_id))].join("\n") +
+              "\n\n" +
+              `Sample images:\n` +
+              images
+                .slice(0, 5)
+                .map((img) => `- ${img.title} (${img.milestone_id})`)
+                .join("\n");
+
+            showResult("result3", result);
+          } catch (error) {
+            showResult("result3", `❌ Error: ${error.message}`, true);
+          }
+          disableButton("testTopicFilter", false);
+        });
+
+      // Test 4: Random image
+      document
+        .getElementById("testRandomImage")
+        .addEventListener("click", async () => {
+          const milestoneId = document
+            .getElementById("randomMilestoneId")
+            .value.trim();
+          if (!milestoneId) {
+            showResult("result4", "❌ Please enter a milestone ID", true);
+            return;
+          }
+
+          disableButton("testRandomImage");
+          try {
+            const randomImage =
+              await milestoneImageService.getRandomImageByMilestoneId(
+                milestoneId
+              );
+            if (randomImage) {
+              const result =
+                `✅ Random image for ${milestoneId}:\n\n` +
+                `Title: ${randomImage.title}\n` +
+                `Description: ${randomImage.description || "N/A"}\n` +
+                `Topic: ${randomImage.topic}\n` +
+                `Created: ${new Date(
+                  randomImage.created_at
+                ).toLocaleDateString()}\n` +
+                `Image URL: ${randomImage.image_url}`;
+
+              showResult("result4", result);
+            } else {
+              showResult(
+                "result4",
+                `❌ No random image found for milestone: ${milestoneId}`,
+                true
+              );
+            }
+          } catch (error) {
+            showResult("result4", `❌ Error: ${error.message}`, true);
+          }
+          disableButton("testRandomImage", false);
+        });
+
+      // Initialize milestone ID inputs with default value
+      document.getElementById("milestoneId").value = "trung-sisters-1";
+      document.getElementById("randomMilestoneId").value = "trung-sisters-1";
+    </script>
+  </body>
+</html>
