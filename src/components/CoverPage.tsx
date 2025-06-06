@@ -10,6 +10,19 @@ const CoverPage = () => {
   const { loginWithGoogle } = useUser();
   const { t } = useLanguage();
 
+  // Import icon images
+  const iconImages = [
+    'https://res.cloudinary.com/dfhodnqig/image/upload/v1749220077/icon1_tig130.jpg',
+    'https://res.cloudinary.com/dfhodnqig/image/upload/v1749220077/icon2_pllpd0.jpg',
+    'https://res.cloudinary.com/dfhodnqig/image/upload/v1749220077/icon3_zxtka1.jpg',
+    'https://res.cloudinary.com/dfhodnqig/image/upload/v1749220077/icon4_fhulmg.jpg',
+    'https://res.cloudinary.com/dfhodnqig/image/upload/v1749220077/icon4_fhulmg.jpg',
+    'https://res.cloudinary.com/dfhodnqig/image/upload/v1749220077/icon6_ifzr73.jpg',
+    'https://res.cloudinary.com/dfhodnqig/image/upload/v1749220078/icon7_uhbv3i.jpg',
+    'https://res.cloudinary.com/dfhodnqig/image/upload/v1749220078/icon8_tgvvq3.jpg',
+    'https://res.cloudinary.com/dfhodnqig/image/upload/v1749220078/icon9_o72jny.jpg'
+  ];
+
   const handleGoogleSignIn = async () => {
     try {
       await loginWithGoogle();
@@ -72,18 +85,21 @@ const CoverPage = () => {
                   </div>
                 </div>
                 <div className="relative">
-                  <div className="bg-gradient-to-br from-red-100 to-yellow-100 rounded-2xl p-6 shadow-lg">
-                    <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-gradient-to-br from-red-100 to-yellow-100 rounded-2xl p-6 shadow-lg">                    <div className="grid grid-cols-3 gap-2">
                       {Array.from({ length: 9 }, (_, i) => (
                         <div
                           key={i}
-                          className="aspect-square bg-white rounded-lg shadow-sm flex items-center justify-center text-2xl"
+                          className="aspect-square bg-white rounded-lg shadow-sm flex items-center justify-center overflow-hidden"
                           style={{
                             animationDelay: `${i * 0.1}s`,
                             animation: 'fadeIn 0.6s ease-in-out forwards'
                           }}
                         >
-                          {['🏯', '🎋', '🌸', '🍃', '⛩️', '🎎', '🏔️', '🌊', '🌺'][i]}
+                          <img 
+                            src={iconImages[i]} 
+                            alt={`Vietnamese icon ${i + 1}`}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
                         </div>
                       ))}
                     </div>

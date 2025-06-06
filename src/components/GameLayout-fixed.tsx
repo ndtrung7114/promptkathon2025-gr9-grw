@@ -10,7 +10,7 @@ import { UserProvider, useUser } from '../contexts/UserContext';
 import { markMilestoneCompleted } from '../lib/supabase/campaignService';
 
 export type GameTopic = 'history' | 'culture';
-export type DifficultyLevel = 2 | 3 | 4;
+export type DifficultyLevel = 2 | 3; // Changed from 2|3|4 to match campaignService
 
 export interface BestTimes {
   [key: string]: number;
@@ -110,17 +110,23 @@ const GameLayoutInner = () => {
     setCurrentScreen('milestones');
     setSelectedMilestone(null);
     setSelectedDifficulty(null);
-  };
-  const handlePuzzleComplete = async (timeInSeconds: number) => {
+  };  const handlePuzzleComplete = async (timeInSeconds: number, moves = 0, hints = 0) => {
     // Handle milestone completion for advantage users
     if (selectedMilestone && user?.id) {
       try {
+        // Only pass difficulty 2 or 3, not 4 as it's not supported by the API
+        const safeDifficulty = (selectedDifficulty && (selectedDifficulty === 2 || selectedDifficulty === 3)) 
+          ? selectedDifficulty 
+          : 3; // Default to 3 if not 2 or 3
+          
         await markMilestoneCompleted(
           selectedMilestone,
-          selectedDifficulty || 3,
+          safeDifficulty,
           user.id,
           timeInSeconds,
-          100 // default score
+          100, // default score
+          moves, // Add moves parameter
+          hints  // Add hints parameter
         );
       } catch (error) {
         console.error('Error marking milestone completed:', error);
@@ -217,13 +223,10 @@ const GameLayoutInner = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {currentScreen === 'home' && (
+      )}      {currentScreen === 'home' && (
         <HomeScreen 
           onTopicSelect={handleTopicSelect}
           bestTimes={bestTimes}
-          onLogin={() => setAuthModal({ isOpen: true, mode: 'login' })}
           user={user}
         />
       )}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BestTimes, GameTopic } from './GameLayout';
 import { User } from '../contexts/UserContext';
-import { LogIn, Crown, Shield, Lock } from 'lucide-react';
+import { LogIn, Shield } from 'lucide-react';
 import PremiumUpgradeModal from './PremiumUpgradeModal';
 import LanguageToggle from './LanguageToggle';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -11,6 +11,7 @@ interface HomeScreenProps {
   onTopicSelect: (topic: GameTopic) => void;
   bestTimes: BestTimes;
   user: User | null;
+  onLogin?: () => void; // Optional onLogin prop for backward compatibility
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ onTopicSelect, bestTimes, user }) => {
@@ -26,15 +27,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onTopicSelect, bestTimes, user 
     isAdmin: user?.isAdmin,
     isPremium: user?.isPremium
   });
-
   const handleTopicSelect = (topic: GameTopic) => {
-    // Check if user is trying to access history and is not premium
-    if (topic === 'history' && user && !user.isPremium) {
-      setShowPremiumModal(true);
-      return;
-    }
-    
-    // Allow access for premium users or culture topic
+    // Allow all users to access historical campaigns page
+    // Premium access control is now handled at individual campaign level
     onTopicSelect(topic);
   };
 
@@ -111,38 +106,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onTopicSelect, bestTimes, user 
         </div>
 
         {/* Topic Selection Cards */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12 w-full max-w-4xl">
-          {/* History Topic */}
+        <div className="grid md:grid-cols-2 gap-8 mb-12 w-full max-w-4xl">          {/* History Topic */}
           <div 
             onClick={() => handleTopicSelect('history')}
-            className={`group relative bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer hover:scale-105 border border-white/50 ${
-              user && !user.isPremium ? 'opacity-90' : ''
-            }`}
+            className="group relative bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer hover:scale-105 border border-white/50"
           >
             <div className="text-center">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 relative">
+              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                 <div className="text-white text-4xl">📜</div>
-                <div className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1">
-                  <Crown className="w-4 h-4 text-white" />
-                </div>
-                {user && !user.isPremium && (
-                  <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center">
-                    <Lock className="w-6 h-6 text-white" />
-                  </div>
-                )}
               </div>
               <h2 className="text-3xl font-bold text-gray-800 mb-4">
                 {t('home.history.title')}
-                <span className="text-yellow-500 ml-2">👑</span>
-                {user && !user.isPremium && (
-                  <span className="text-gray-500 ml-2">🔒</span>
-                )}
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                {user && !user.isPremium 
-                  ? t('premium.history.description')
-                  : t('home.history.description')
-                }
+                {t('home.history.description')}
               </p>
             </div>
             <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

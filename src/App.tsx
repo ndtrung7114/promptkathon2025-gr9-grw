@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { BackgroundMusicProvider } from "./contexts/BackgroundMusicContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LoadingFallback from "./components/LoadingFallback";
@@ -57,27 +58,29 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
           <UserProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              {!isLoaded ? (
-                <LoadingFallback message="Loading application..." />
-              ) : hasError ? (
-                <LoadingFallback 
-                  message="Application failed to load properly. Please try again." 
-                  isError={true} 
-                  onRetry={() => window.location.reload()} 
-                />
-              ) : (
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              )}
-            </TooltipProvider>
+            <BackgroundMusicProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                {!isLoaded ? (
+                  <LoadingFallback message="Loading application..." />
+                ) : hasError ? (
+                  <LoadingFallback 
+                    message="Application failed to load properly. Please try again." 
+                    isError={true} 
+                    onRetry={() => window.location.reload()} 
+                  />
+                ) : (
+                  <BrowserRouter>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </BrowserRouter>
+                )}
+              </TooltipProvider>
+            </BackgroundMusicProvider>
           </UserProvider>
         </LanguageProvider>
       </QueryClientProvider>

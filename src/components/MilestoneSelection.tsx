@@ -157,10 +157,9 @@ const MilestoneSelection: React.FC<MilestoneSelectionProps> = ({
                       <h3 className="text-xl font-bold text-gray-800 mb-2">{milestone.title}</h3>
                       <p className="text-gray-600 text-sm mb-4 leading-relaxed">
                         {milestone.description}
-                      </p>                    {/* Difficulty Buttons */}
-                      {isUnlocked && (
+                      </p>                    {/* Difficulty Buttons */}                      {isUnlocked && (
                         <div className="space-y-2">
-                          <p className="text-sm font-semibold text-gray-700 mb-2">Chọn độ khó:</p>
+                          <p className="text-sm font-semibold text-gray-700 mb-2">{t('campaigns.difficulty')}</p>
                           <div className="flex gap-2">
                             {[2, 3, 4].map((size) => (
                               <button
@@ -174,11 +173,9 @@ const MilestoneSelection: React.FC<MilestoneSelectionProps> = ({
                             ))}
                           </div>
                         </div>
-                      )}
-
-                      {!isUnlocked && (
+                      )}                      {!isUnlocked && (
                         <div className="text-center text-gray-500 text-sm">
-                          Hoàn thành cột mốc trước để mở khóa
+                          {t('campaigns.unlock')}
                         </div>
                       )}
                     </div>

@@ -7,6 +7,7 @@ import HistoricalCampaigns from './HistoricalCampaigns';
 import MilestoneSelection from './MilestoneSelection';
 import AuthModal from './AuthModal';
 import CoverPage from './CoverPage';
+import BackgroundMusicControl from './BackgroundMusicControl';
 import { UserProvider, useUser } from '../contexts/UserContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useGameState } from '../hooks/useGameState';
@@ -363,6 +364,9 @@ const GameLayoutInner = () => {
         mode={authModal.mode}
         onClose={() => setAuthModal({ ...authModal, isOpen: false })}
       />
+      
+      {/* Background Music Control */}
+      <BackgroundMusicControl />
     </div>
   );
 };

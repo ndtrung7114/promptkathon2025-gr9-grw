@@ -33,36 +33,44 @@
         animation: spin 1s linear infinite;
       }
       @keyframes spin {
-        to {transform: rotate(360deg);}
+        to {
+          transform: rotate(360deg);
+        }
       }
     </style>
 
     <meta property="og:title" content="vietnam-heritage-jigsaw-quest" />
     <meta property="og:description" content="Lovable Generated Project" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta
+      property="og:image"
+      content="https://lovable.dev/opengraph-image-p98pqg.png"
+    />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta
+      name="twitter:image"
+      content="https://lovable.dev/opengraph-image-p98pqg.png"
+    />
   </head>
   <body>
     <!-- Initial loading state that will be visible before React loads -->
     <div class="loading-indicator" id="initial-loader">
       <div class="spinner"></div>
     </div>
-    
+
     <div id="root"></div>
-    
+
     <script>
       // Remove the initial loader once the app has loaded
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          const loader = document.getElementById('initial-loader');
+      window.addEventListener("load", function () {
+        setTimeout(function () {
+          const loader = document.getElementById("initial-loader");
           if (loader) {
-            loader.style.opacity = '0';
-            loader.style.transition = 'opacity 0.5s';
-            setTimeout(function() {
+            loader.style.opacity = "0";
+            loader.style.transition = "opacity 0.5s";
+            setTimeout(function () {
               if (loader.parentNode) {
                 loader.parentNode.removeChild(loader);
               }
@@ -70,24 +78,25 @@
           }
         }, 500);
       });
-      
+
       // Fallback if the app doesn't load properly
-      setTimeout(function() {
-        const loader = document.getElementById('initial-loader');
-        const root = document.getElementById('root');
-        
+      setTimeout(function () {
+        const loader = document.getElementById("initial-loader");
+        const root = document.getElementById("root");
+
         if (loader && (!root.children || root.children.length === 0)) {
-          const message = document.createElement('div');
-          message.style.textAlign = 'center';
-          message.style.marginTop = '20px';
-          message.innerHTML = '<p style="font-family: sans-serif; color: #4b5563;">Application is taking longer than expected to load.</p>' +
-                             '<button style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;" ' +
-                             'onclick="window.location.reload()">Refresh Page</button>';
+          const message = document.createElement("div");
+          message.style.textAlign = "center";
+          message.style.marginTop = "20px";
+          message.innerHTML =
+            '<p style="font-family: sans-serif; color: #4b5563;">Application is taking longer than expected to load.</p>' +
+            '<button style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;" ' +
+            'onclick="window.location.reload()">Refresh Page</button>';
           loader.appendChild(message);
         }
       }, 10000);
     </script>
-    
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

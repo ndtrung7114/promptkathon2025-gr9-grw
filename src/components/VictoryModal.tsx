@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Home, RotateCcw, Play, Pause, Volume2, Loader2, ArrowLeft } from 'lucide-react';
 import { useAudio } from '../hooks/useAudio';
+import { useVictorySound } from '../hooks/useVictorySound';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface VictoryModalProps {
@@ -30,7 +30,15 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
 }) => {
   const { t } = useLanguage();
   const [showConfetti, setShowConfetti] = useState(true);
-  const audio = useAudio(image.audioUrl);useEffect(() => {
+  const audio = useAudio(image.audioUrl);
+  const { playVictorySound } = useVictorySound();
+
+  // Play victory sound when modal appears
+  useEffect(() => {
+    playVictorySound();
+  }, [playVictorySound]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       setShowConfetti(false);
     }, 3000);
@@ -70,12 +78,11 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
 
       {/* Modal Content */}
       <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-red-500 to-yellow-500 rounded-t-3xl p-6 text-white text-center">
-          <h1 className="text-4xl font-bold mb-2 vietnam-title">Chúc mừng!</h1>
+        {/* Header */}        <div className="bg-gradient-to-r from-red-500 to-yellow-500 rounded-t-3xl p-6 text-white text-center">
+          <h1 className="text-4xl font-bold mb-2 vietnam-title">{t('victory.congratulations')}</h1>
           <div className="flex items-center justify-center gap-4 text-lg">
             <span>🎉</span>
-            <span>Hoàn thành trò chơi</span>
+            <span>{t('victory.completed')}</span>
             <span>🎉</span>
           </div>
         </div>
@@ -97,29 +104,26 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
               <h2 className="text-2xl font-bold">{image.title}</h2>
             </div>
           </div>          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="text-center bg-gray-50 rounded-2xl p-4">
-              <div className="text-2xl font-bold text-gray-800">{formatGameTime(time)}</div>
-              <div className="text-sm text-gray-500">Thời gian</div>
+          <div className="grid grid-cols-3 gap-4 mb-6">            <div className="text-center bg-gray-50 rounded-2xl p-4">
+              <div className="text-2xl font-bold text-gray-800">{formatGameTime(time)}</div>              <div className="text-sm text-gray-500">{t('game.time')}</div>
               {isNewBest && (
-                <div className="text-xs text-green-600 font-semibold mt-1">🏆 Kỉ lục mới!</div>
+                <div className="text-xs text-green-600 font-semibold mt-1">{t('victory.newRecord')}</div>
               )}
             </div>
             <div className="text-center bg-gray-50 rounded-2xl p-4">
               <div className="text-2xl font-bold text-gray-800">{moves}</div>
-              <div className="text-sm text-gray-500">Số lần di chuyển</div>
+              <div className="text-sm text-gray-500">{t('game.moves')}</div>
             </div>
             <div className="text-center bg-gray-50 rounded-2xl p-4">
               <div className="text-2xl">⭐</div>
-              <div className="text-sm text-gray-500">Hoàn thành</div>
+              <div className="text-sm text-gray-500">{t('victory.completed.label')}</div>
             </div>
           </div>
 
-          {/* Description */}
-          <div className="bg-gradient-to-r from-red-50 to-yellow-50 rounded-2xl p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Thông tin về bức tranh:</h3>
+          {/* Description */}          <div className="bg-gradient-to-r from-red-50 to-yellow-50 rounded-2xl p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">{t('victory.imageInfo')}</h3>
             <p className="text-gray-600 leading-relaxed">{image.description}</p>
-          </div>          {/* Audio Section */}
+          </div>{/* Audio Section */}
           {image.audioUrl && (
             <div className="bg-gray-50 rounded-2xl p-6 mb-6">
               <div className="flex items-center gap-4 mb-4">

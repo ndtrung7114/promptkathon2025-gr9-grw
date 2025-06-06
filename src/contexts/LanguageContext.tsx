@@ -5,7 +5,7 @@ export type Language = 'vi' | 'en';
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -67,36 +67,39 @@ const translations = {  vi: {
     'puzzle.moves': 'Số lần di chuyển',
     'puzzle.best': 'BEST',
     
-    // Victory Modal
-    'victory.congratulations': 'Chúc mừng!',
+    // Victory Modal    'victory.congratulations': 'Chúc mừng!',
     'victory.completed': 'Bạn đã hoàn thành thành công câu đố!',
     'victory.time': 'Thời gian',
     'victory.moves': 'Số lần di chuyển',
     'victory.completed.label': 'Hoàn thành',
+    'victory.newRecord': '🏆 Kỉ lục mới!',
     'victory.imageInfo': 'Thông tin về bức tranh:',
     'victory.audioInfo': '🎵 Nghe kể chuyện về bức tranh di sản văn hóa Việt Nam này',
     'victory.replay': 'Chơi lại',
     'victory.back': 'Quay lại',
     'victory.home': 'Trang chủ',
-    
-    // Premium Features
+      // Premium Features
     'premium.title': 'Tính năng Premium',
     'premium.subtitle': 'Nâng cấp để mở khóa tất cả tính năng',
     'premium.preview.locked': 'Xem trước bị khóa',
     'premium.preview.description': 'Tính năng "Xem trước" trong chế độ văn hóa chỉ dành cho tài khoản Premium',
     'premium.history.locked': 'Chiến dịch lịch sử bị khóa',
     'premium.history.description': 'Bạn cần tài khoản Premium để truy cập nội dung này',
-    'premium.benefits': 'Lợi ích Premium:',    'premium.benefit1': 'Xem trước hình ảnh trong tất cả chế độ chơi',
+    'premium.campaign.locked': 'Chiến dịch này yêu cầu Premium',
+    'premium.campaign.description': 'Nâng cấp để mở khóa tất cả chiến dịch lịch sử',
+    'premium.benefits': 'Lợi ích Premium:','premium.benefit1': 'Xem trước hình ảnh trong tất cả chế độ chơi',
     'premium.benefit2': 'Truy cập không giới hạn tất cả chiến dịch lịch sử',
     'premium.benefit3': 'Hỗ trợ phát triển game Việt Nam',
     'premium.close': 'Để sau',
     'premium.upgrade': 'Nâng cấp Premium',
-      // Campaigns
-    'campaigns.loading': 'Đang tải chiến dịch lịch sử...',
-    'campaigns.title': 'Chiến dịch lịch sử',
-    'campaigns.subtitle': 'Hành trình qua quá khứ anh hùng của Việt Nam',
+      // Campaigns    'campaigns.loading': 'Đang tải chiến dịch lịch sử...',
+    'campaigns.title': 'Các sự kiện lịch sử',
+    'campaigns.subtitle': 'Hành trình qua lịch sử VIệt Nam huy hoàng',
     'campaigns.difficulty': 'Chọn độ khó:',
-    'campaigns.unlock': 'Hoàn thành cột mốc trước để mở khóa',    // Auth
+    'campaigns.unlock': 'Hoàn thành cột mốc trước để mở khóa',
+    'campaigns.progress': '{completed}/{total} cột mốc hoàn thành',
+    
+    // Auth
     'auth.signIn': 'Đăng nhập',
     'auth.signUp': 'Đăng ký',
     'auth.signOut': 'Đăng xuất',
@@ -111,6 +114,15 @@ const translations = {  vi: {
     'game.best': 'TUYỆT NHẤT',
     'game.preview': 'Xem trước',
     'game.shuffle': 'Xáo trộn lại',
+      // Background Music
+    'music.backgroundMusic': 'Nhạc nền',
+    'music.play': 'Phát',
+    'music.pause': 'Tạm dừng',
+    'music.loading': 'Đang tải...',
+    'music.settings': 'Cài đặt âm nhạc',
+    'music.turnOff': 'Tắt nhạc nền',
+    'music.enable': 'Bật nhạc nền',
+    'music.volume': 'Âm lượng',
     
     // Common
     'common.back': 'Quay lại',
@@ -169,36 +181,39 @@ const translations = {  vi: {
     'puzzle.moves': 'Moves',
     'puzzle.best': 'BEST',
     
-    // Victory Modal
-    'victory.congratulations': 'Congratulations!',
+    // Victory Modal    'victory.congratulations': 'Congratulations!',
     'victory.completed': 'You have successfully completed the puzzle!',
     'victory.time': 'Time',
     'victory.moves': 'Moves',
     'victory.completed.label': 'Completed',
+    'victory.newRecord': '🏆 New Record!',
     'victory.imageInfo': 'About this image:',
     'victory.audioInfo': '🎵 Listen to the story of this Vietnamese cultural heritage image',
     'victory.replay': 'Play Again',
     'victory.back': 'Back',
     'victory.home': 'Home',
-    
-    // Premium Features
+      // Premium Features
     'premium.title': 'Premium Feature',
     'premium.subtitle': 'Upgrade to unlock all features',
     'premium.preview.locked': 'Preview Locked',
     'premium.preview.description': 'The "Preview" feature in culture mode is only for Premium accounts',
     'premium.history.locked': 'History Campaign Locked',
     'premium.history.description': 'You need a Premium account to access this content',
-    'premium.benefits': 'Premium Benefits:',    'premium.benefit1': 'Preview images in all game modes',
+    'premium.campaign.locked': 'This campaign requires Premium',
+    'premium.campaign.description': 'Upgrade to unlock all historical campaigns',
+    'premium.benefits': 'Premium Benefits:','premium.benefit1': 'Preview images in all game modes',
     'premium.benefit2': 'Unlimited access to all history campaigns',
     'premium.benefit3': 'Support Vietnamese game development',
     'premium.close': 'Maybe Later',
     'premium.upgrade': 'Upgrade to Premium',
-      // Campaigns
-    'campaigns.loading': 'Loading historical campaigns...',
+      // Campaigns    'campaigns.loading': 'Loading historical campaigns...',
     'campaigns.title': 'Historical Campaigns',
     'campaigns.subtitle': 'Journey through Vietnam\'s heroic past',
     'campaigns.difficulty': 'Choose difficulty:',
-    'campaigns.unlock': 'Complete previous milestone to unlock',    // Auth
+    'campaigns.unlock': 'Complete previous milestone to unlock',
+    'campaigns.progress': '{completed}/{total} milestones completed',
+    
+    // Auth
     'auth.signIn': 'Sign In',
     'auth.signUp': 'Sign Up',
     'auth.signOut': 'Sign Out',
@@ -206,13 +221,22 @@ const translations = {  vi: {
     'auth.password': 'Password',
     'auth.name': 'Name',
     'auth.googleSignInFailed': 'Failed to sign in with Google',
-    
-    // Game
+      // Game
     'game.time': 'Time',
     'game.moves': 'Moves',
     'game.best': 'BEST',
     'game.preview': 'Preview',
     'game.shuffle': 'Shuffle',
+    
+    // Background Music
+    'music.backgroundMusic': 'Background Music',
+    'music.play': 'Play',
+    'music.pause': 'Pause',
+    'music.loading': 'Loading...',
+    'music.settings': 'Music settings',
+    'music.turnOff': 'Turn off background music',
+    'music.enable': 'Enable background music',
+    'music.volume': 'Volume',
     
     // Common
     'common.back': 'Back',
@@ -237,9 +261,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Save language preference to localStorage
     localStorage.setItem('language', language);
   }, [language]);
-
-  const t = (key: string): string => {
-    return translations[language][key] || key;
+  const t = (key: string, params?: Record<string, string | number>): string => {
+    let translation = translations[language][key] || key;
+    
+    if (params) {
+      Object.keys(params).forEach(param => {
+        translation = translation.replace(`{${param}}`, String(params[param]));
+      });
+    }
+    
+    return translation;
   };
 
   return (
