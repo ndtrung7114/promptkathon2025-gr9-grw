@@ -617,43 +617,39 @@ export const achievementsService = {
 
 // Admin Service
 export const adminService = {
-  // Check if current user is admin
+  // Check if current user is admin (simplified to avoid RPC calls)
   async isAdmin(userId?: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('is_admin', {
-        user_id: userId || undefined
-      });
+      // Instead of using RPC, directly check the profiles table
+      if (!userId) {
+        const session = await supabase.auth.getSession();
+        userId = session.data.session?.user?.id;
+        if (!userId) return false;
+      }
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
       
       if (error) {
-        console.error('Error checking admin status:', error);
+        console.error('Error checking admin status through profiles:', error);
         return false;
       }
       
-      return data || false;
+      return data?.role === 'admin' || false;
     } catch (error) {
       console.error('Error checking admin status:', error);
       return false;
     }
   },
 
-  // Check if user has specific admin permission
+  // Check if user has specific admin permission (simplified)
   async hasPermission(permission: AdminPermission, userId?: string): Promise<boolean> {
-    try {
-      const { data, error } = await supabase.rpc('has_admin_permission', {
-        permission_name: permission,
-        user_id: userId || undefined
-      });
-      
-      if (error) {
-        console.error('Error checking admin permission:', error);
-        return false;
-      }
-      
-      return data || false;
-    } catch (error) {
-      console.error('Error checking admin permission:', error);
-      return false;
-    }
+    // For now, just check if they're an admin at all
+    // This avoids the problematic RPC call
+    return this.isAdmin(userId);
   },
   // Get user role from profiles
   async getUserRole(userId: string): Promise<UserRole> {

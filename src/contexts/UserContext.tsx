@@ -39,31 +39,45 @@ const mapSupabaseUserToUser = async (supabaseUser: SupabaseUser): Promise<User> 
   console.log('Mapping user:', supabaseUser.id, supabaseUser.email);
   
   try {
-    // Add timeout to prevent hanging
-    const rolePromise = adminService.getUserRole(supabaseUser.id);
-    const isAdminPromise = adminService.isAdmin(supabaseUser.id);
+    // Check for cached user data first
+    const cachedUserData = localStorage.getItem('user_data');
+    if (cachedUserData) {
+      try {
+        const parsedUser = JSON.parse(cachedUserData);
+        if (parsedUser.id === supabaseUser.id) {
+          console.log('Using cached user data temporarily while fetching fresh data');
+          // Return cached data immediately, but still fetch fresh data below
+          setTimeout(() => {
+            // Refresh the data in background
+            mapSupabaseUserToUser(supabaseUser).catch(console.error);
+          }, 5000);
+          return {
+            ...parsedUser,
+            email: supabaseUser.email || parsedUser.email || ''
+          };
+        }
+      } catch (e) {
+        console.error('Error parsing cached user data:', e);
+      }
+    }
     
-    // Fetch user profile to get premium status
-    const profilePromise = supabase
+    // Fetch user profile to get premium status - prioritize this 
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('is_premium')
+      .select('is_premium, role')
       .eq('id', supabaseUser.id)
       .single();
     
-    // Set a 5-second timeout for all data fetching
-    const timeoutPromise = new Promise<{ role: UserRole; isAdmin: boolean; isPremium: boolean }>((_, reject) => {
-      setTimeout(() => reject(new Error('User data fetch timeout')), 5000);
-    });
+    if (profileError) {
+      console.error('Error fetching profile data:', profileError);
+      // Don't throw, try to continue with defaults
+    }
+
+    // Only get the role from the profile, skip admin check
+    const role = profileData?.role || 'user';
+    const isPremium = profileData?.is_premium || false;
     
-    const dataPromise = Promise.all([rolePromise, isAdminPromise, profilePromise]).then(([role, isAdmin, profileResult]) => ({
-      role,
-      isAdmin,
-      isPremium: profileResult.data?.is_premium || false
-    }));
-    
-    const { role, isAdmin, isPremium } = await Promise.race([dataPromise, timeoutPromise]);
-    
-    console.log('User data fetched:', { role, isAdmin, isPremium });
+    console.log('User data fetched:', { role, isPremium });
     
     return {
       id: supabaseUser.id,
@@ -72,12 +86,32 @@ const mapSupabaseUserToUser = async (supabaseUser: SupabaseUser): Promise<User> 
       avatar_url: supabaseUser.user_metadata?.avatar_url,
       hasAdvantage: true,
       role,
-      isAdmin,
+      isAdmin: false, // Skip the admin check as requested
       isPremium
     };
   } catch (error) {
     console.error('Error fetching user data, using defaults:', error);
-    // Fallback to default values if data fetching fails
+    
+    // Try to get the previously stored user instead of falling back to false
+    const previousUser = localStorage.getItem('user_data');
+    if (previousUser) {
+      try {
+        const parsedUser = JSON.parse(previousUser);
+        if (parsedUser.id === supabaseUser.id) {
+          console.log('Using cached user data from localStorage');
+          return {
+            ...parsedUser,
+            email: supabaseUser.email || parsedUser.email || '',
+            name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || parsedUser.name,
+            avatar_url: supabaseUser.user_metadata?.avatar_url || parsedUser.avatar_url
+          };
+        }
+      } catch (e) {
+        console.error('Error parsing cached user data:', e);
+      }
+    }
+    
+    // Ultimate fallback if no cached data exists or can't be parsed
     return {
       id: supabaseUser.id,
       email: supabaseUser.email || '',
@@ -93,21 +127,71 @@ const mapSupabaseUserToUser = async (supabaseUser: SupabaseUser): Promise<User> 
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
+  const [loading, setLoading] = useState(true);  // Cached user setter function with error handling
+  const setCachedUser = (newUser: User | null) => {
+    try {
+      if (newUser) {
+        // Store the user data in localStorage to persist premium status
+        localStorage.setItem('user_data', JSON.stringify(newUser));
+      } else {
+        localStorage.removeItem('user_data');
+      }
+      setUser(newUser);
+    } catch (error) {
+      console.error("Error setting cached user:", error);
+      // Still try to set the user in state even if localStorage fails
+      setUser(newUser);
+    }
+  };
+  
   useEffect(() => {
+    let isMounted = true;
+    
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Check for cached user first for immediate UI feedback
+        const cachedUserData = localStorage.getItem('user_data');
+        let initialUser: User | null = null;
+        
+        if (cachedUserData) {
+          try {
+            initialUser = JSON.parse(cachedUserData);
+            // Set user temporarily from cache while we fetch the latest
+            if (isMounted) setUser(initialUser);
+          } catch (e) {
+            console.error('Error parsing cached user data:', e);
+          }
+        }
+        
+        // Get the actual session data
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Error getting auth session:', sessionError);
+          if (isMounted) setLoading(false);
+          return;
+        }
+        
         if (session?.user) {
-          const mappedUser = await mapSupabaseUserToUser(session.user);
-          setUser(mappedUser);
+          try {
+            const mappedUser = await mapSupabaseUserToUser(session.user);
+            if (isMounted) setCachedUser(mappedUser);
+          } catch (userMapError) {
+            console.error('Error mapping user:', userMapError);
+            // Still use the cached user if available
+            if (initialUser && isMounted) {
+              setUser(initialUser);
+            }
+          }
+        } else if (initialUser && isMounted) {
+          // If we had a cached user but no session, clear it
+          setCachedUser(null);
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -118,15 +202,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         console.log('Auth state changed:', event, session);
         
-        if (session?.user) {
-          const mappedUser = await mapSupabaseUserToUser(session.user);
-          setUser(mappedUser);
-        } else {
-          setUser(null);
+        try {
+          if (session?.user) {
+            const mappedUser = await mapSupabaseUserToUser(session.user);
+            if (isMounted) setCachedUser(mappedUser);
+          } else {
+            if (isMounted) setCachedUser(null);
+          }
+        } catch (error) {
+          console.error('Error handling auth change:', error);
+        } finally {
+          if (isMounted) setLoading(false);
         }
-        setLoading(false);
       }
     );
+    
+    // Cleanup function to prevent state updates after unmounting
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
 
     return () => subscription.unsubscribe();
   }, []);

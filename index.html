@@ -2,10 +2,40 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://cusiltcmhkkcwynydpjy.supabase.co" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>vietnam-heritage-jigsaw-quest</title>
     <meta name="description" content="Lovable Generated Project" />
     <meta name="author" content="Lovable" />
+    <!-- Add runtime monitoring -->
+    <script src="/monitor.js"></script>
+    <!-- Fallback styles in case CSS fails to load -->
+    <style>
+      .loading-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 100vw;
+        background: #f9fafb;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 9999;
+      }
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 5px solid #e5e7eb;
+        border-top-color: #3b82f6;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to {transform: rotate(360deg);}
+      }
+    </style>
 
     <meta property="og:title" content="vietnam-heritage-jigsaw-quest" />
     <meta property="og:description" content="Lovable Generated Project" />
@@ -16,9 +46,48 @@
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
   </head>
-
   <body>
+    <!-- Initial loading state that will be visible before React loads -->
+    <div class="loading-indicator" id="initial-loader">
+      <div class="spinner"></div>
+    </div>
+    
     <div id="root"></div>
+    
+    <script>
+      // Remove the initial loader once the app has loaded
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loader = document.getElementById('initial-loader');
+          if (loader) {
+            loader.style.opacity = '0';
+            loader.style.transition = 'opacity 0.5s';
+            setTimeout(function() {
+              if (loader.parentNode) {
+                loader.parentNode.removeChild(loader);
+              }
+            }, 500);
+          }
+        }, 500);
+      });
+      
+      // Fallback if the app doesn't load properly
+      setTimeout(function() {
+        const loader = document.getElementById('initial-loader');
+        const root = document.getElementById('root');
+        
+        if (loader && (!root.children || root.children.length === 0)) {
+          const message = document.createElement('div');
+          message.style.textAlign = 'center';
+          message.style.marginTop = '20px';
+          message.innerHTML = '<p style="font-family: sans-serif; color: #4b5563;">Application is taking longer than expected to load.</p>' +
+                             '<button style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;" ' +
+                             'onclick="window.location.reload()">Refresh Page</button>';
+          loader.appendChild(message);
+        }
+      }, 10000);
+    </script>
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
