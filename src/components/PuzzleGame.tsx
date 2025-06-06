@@ -458,21 +458,18 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({  topic,
         </div>
         
         {/* Navigation Buttons - Right side */}
-        <div className="flex items-center gap-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2">
-          <button
+        <div className="flex items-center gap-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2">          <button
             onClick={onBack}
-            className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors duration-200"
+            className="flex items-center justify-center px-3 py-2 text-gray-700 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors duration-200"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="hidden sm:inline">{t('common.back')}</span>
           </button>
           <div className="w-px h-6 bg-gray-300"></div>
           <button
             onClick={onHome}
-            className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors duration-200"
+            className="flex items-center justify-center px-3 py-2 text-gray-700 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors duration-200"
           >
             <Home className="w-5 h-5" />
-            <span className="hidden sm:inline">{t('common.home')}</span>
           </button>
         </div>
       </div>
