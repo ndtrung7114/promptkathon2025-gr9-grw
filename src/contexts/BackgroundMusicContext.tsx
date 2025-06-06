@@ -39,6 +39,9 @@ export const BackgroundMusicProvider: React.FC<BackgroundMusicProviderProps> = (
     return saved !== null ? parseFloat(saved) : 0.3; // Default to 30% volume
   });
 
+  // Track if user has manually paused to prevent auto-play
+  const [userPaused, setUserPaused] = useState(false);
+
   const backgroundMusic = useBackgroundMusic(BACKGROUND_MUSIC_URL, {
     autoPlay: false, // Don't auto-play due to browser policies
     loop: true,
@@ -60,12 +63,10 @@ export const BackgroundMusicProvider: React.FC<BackgroundMusicProviderProps> = (
   useEffect(() => {
     setSavedVolume(backgroundMusic.volume);
   }, [backgroundMusic.volume]);
-
   // Auto-start music when enabled (with user gesture requirement)
   useEffect(() => {
-    if (isEnabled && !backgroundMusic.isPlaying && !backgroundMusic.isLoading) {
-      // We can't auto-play due to browser policies, but we can try
-      // This will only work if the user has already interacted with the page
+    if (isEnabled && !backgroundMusic.isPlaying && !backgroundMusic.isLoading && !userPaused) {
+      // Only auto-play if user hasn't manually paused
       const tryAutoPlay = async () => {
         try {
           await backgroundMusic.play();
@@ -79,22 +80,53 @@ export const BackgroundMusicProvider: React.FC<BackgroundMusicProviderProps> = (
       const timeoutId = setTimeout(tryAutoPlay, 1000);
       return () => clearTimeout(timeoutId);
     }
-  }, [isEnabled, backgroundMusic.isPlaying, backgroundMusic.isLoading, backgroundMusic.play]);
-
+  }, [isEnabled, backgroundMusic.isPlaying, backgroundMusic.isLoading, backgroundMusic.play, userPaused]);
   const enable = () => {
     setIsEnabled(true);
+    setUserPaused(false); // Reset pause state when enabling
   };
 
   const disable = () => {
     setIsEnabled(false);
+    setUserPaused(false); // Reset pause state when disabling
     if (backgroundMusic.isPlaying) {
       backgroundMusic.pause();
     }
   };
 
+  // Custom play function that resets user pause state
+  const customPlay = async () => {
+    setUserPaused(false);
+    await backgroundMusic.play();
+  };
+
+  // Custom pause function that sets user pause state
+  const customPause = () => {
+    setUserPaused(true);
+    backgroundMusic.pause();
+  };
+
+  // Custom toggle function
+  const customToggle = async () => {
+    if (backgroundMusic.isPlaying) {
+      customPause();
+    } else {
+      await customPlay();
+    }
+  };
   const contextValue: BackgroundMusicContextType = {
-    ...backgroundMusic,
+    isPlaying: backgroundMusic.isPlaying,
+    isLoading: backgroundMusic.isLoading,
+    error: backgroundMusic.error,
+    volume: backgroundMusic.volume,
+    isMuted: backgroundMusic.isMuted,
     isEnabled,
+    play: customPlay,
+    pause: customPause,
+    toggle: customToggle,
+    setVolume: backgroundMusic.setVolume,
+    mute: backgroundMusic.mute,
+    unmute: backgroundMusic.unmute,
     enable,
     disable,
   };
