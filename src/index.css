@@ -114,7 +114,6 @@
       opacity: 0;
     }
   }
-
   .tile-hover {
     transition: all 0.2s ease;
   }
@@ -129,6 +128,41 @@
     transform: scale(1.05) rotate(3deg);
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
     z-index: 20;
+  }
+
+  /* Mobile-specific styles for better touch interaction */
+  @media (hover: none) and (pointer: coarse) {
+    .tile-hover:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .puzzle-piece-mobile {
+      min-height: 80px;
+      min-width: 80px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .puzzle-piece-mobile:active {
+      transform: scale(0.95);
+      transition: transform 0.1s ease;
+    }
+    
+    .puzzle-piece-mobile.selected {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.6);
+      animation: pulse-mobile 1s ease-in-out infinite;
+    }
+  }
+
+  @keyframes pulse-mobile {
+    0%, 100% {
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.6);
+    }
+    50% {
+      box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.3);
+    }
   }
   .drop-zone-active {
     background: rgba(245, 158, 11, 0.2);

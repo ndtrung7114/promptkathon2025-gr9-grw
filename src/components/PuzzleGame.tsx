@@ -51,12 +51,21 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({  topic,
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isComplete, setIsComplete] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [draggedPiece, setDraggedPiece] = useState<number | null>(null);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);  const [draggedPiece, setDraggedPiece] = useState<number | null>(null);
   const [moves, setMoves] = useState(0);
   const [hints, setHints] = useState(0);
   const [currentImage, setCurrentImage] = useState<any>(null);
+  const [touchStartPos, setTouchStartPos] = useState<{x: number, y: number} | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const previewTimeoutRef = useRef<NodeJS.Timeout>();
+  // Detect touch device on component mount
+  useEffect(() => {
+    const detectTouchDevice = () => {
+      return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    };
+    setIsTouchDevice(detectTouchDevice());
+  }, []);
+
   // Fallback images for when database is unavailable
   const fallbackImages = {
     history: [
@@ -329,9 +338,8 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({  topic,
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-  const handlePieceClick = (pieceId: number) => {
-    // For touch devices, we'll still support piece swapping by clicking
+  };  const handlePieceClick = (pieceId: number) => {
+    // For touch devices, we'll use a more responsive touch-based interaction
     if (isComplete) return;
     
     // Store the first clicked piece
@@ -349,6 +357,52 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({  topic,
     // Swap the two pieces
     swapPieces(draggedPiece, pieceId);
     setDraggedPiece(null);
+  };
+  // Touch event handlers for better mobile experience
+  const handleTouchStart = (e: React.TouchEvent, pieceId: number) => {
+    if (isComplete) return;
+    
+    const touch = e.touches[0];
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY });
+    setDraggedPiece(pieceId);
+    
+    // Add haptic feedback if available
+    if (navigator.vibrate && isTouchDevice) {
+      navigator.vibrate(50);
+    }
+    
+    // Prevent default to avoid scrolling
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isComplete || !touchStartPos || draggedPiece === null) return;
+    
+    // Prevent scrolling during piece movement
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent, targetPieceId?: number) => {
+    if (isComplete || draggedPiece === null) return;
+    
+    // If we have a specific target (dropped on a piece), swap with it
+    if (targetPieceId !== undefined && targetPieceId !== draggedPiece) {
+      swapPieces(draggedPiece, targetPieceId);
+      
+      // Add success haptic feedback
+      if (navigator.vibrate && isTouchDevice) {
+        navigator.vibrate(100);
+      }
+    }
+    
+    // Reset touch state
+    setDraggedPiece(null);
+    setTouchStartPos(null);
+    
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const swapPieces = (piece1Id: number, piece2Id: number) => {
@@ -398,13 +452,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({  topic,
   const handleDragEnd = () => {
     setDraggedPiece(null);
   };  const showPreviewImage = () => {
-    // For culture mode, only premium users can use preview
-    if (topic === 'culture' && !user?.isPremium) {
-      // Show premium modal instead of alert
-      setShowPremiumModal(true);
-      return;
-    }
-    
+    // Remove premium restrictions - allow all users to use preview in all modes
     setShowPreview(true);
     setHints(prev => {
       const newHints = prev + 1;
@@ -502,18 +550,21 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({  topic,
 
       {/* Main Game Area */}
       <div className="flex-1 flex items-center justify-center">
-        <div className="relative">
-          {/* Puzzle Grid */}          <div
-            className="relative bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl"
-            style={{ width: '500px', height: '500px' }}
-          >
-            <div
+        <div className="relative">        {/* Puzzle Grid */}          <div
+            className="relative bg-white/90 backdrop-blur-sm rounded-3xl p-4 shadow-2xl"
+            style={{ 
+              width: isTouchDevice ? 'min(90vw, 400px)' : '500px', 
+              height: isTouchDevice ? 'min(90vw, 400px)' : '500px',
+              maxWidth: '500px',
+              maxHeight: '500px'
+            }}
+          >            <div
               className="relative w-full h-full rounded-2xl overflow-hidden"
               style={{
                 display: 'grid',
                 gridTemplateColumns: `repeat(${difficulty}, 1fr)`,
                 gridTemplateRows: `repeat(${difficulty}, 1fr)`,
-                gap: '2px',
+                gap: isTouchDevice ? '1px' : '2px',
               }}
             >              {Array.from({ length: difficulty * difficulty }).map((_, position) => {
                 const piece = pieces.find(p => p.currentPosition === position);
@@ -522,29 +573,44 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({  topic,
                 const isCorrectPosition = piece.correctPosition === piece.currentPosition;
                 const isSelected = draggedPiece === piece.id;
 
-                return (
-                  <div
-                    key={position}
-                    className={`relative bg-gray-200 tile-hover cursor-pointer transition-all duration-200 ${
-                      isSelected ? 'tile-dragging scale-105 z-20' : ''
-                    } ${isCorrectPosition ? 'ring-2 ring-green-400' : ''}`}
-                    onClick={() => handlePieceClick(piece.id)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, piece.id)}
+                return (                  <div
+                    key={position}                    className={`relative bg-gray-200 cursor-pointer transition-all duration-200 select-none ${
+                      isSelected ? 'scale-105 z-20 ring-4 ring-yellow-400 ring-opacity-60' : ''
+                    } ${isCorrectPosition ? 'ring-2 ring-green-400' : ''} ${
+                      isTouchDevice 
+                        ? `puzzle-piece-mobile touch-manipulation active:scale-95 ${isSelected ? 'selected' : ''}` 
+                        : 'tile-hover'
+                    }`}
+                    onClick={() => !isTouchDevice && handlePieceClick(piece.id)}
+                    onTouchStart={(e) => isTouchDevice && handleTouchStart(e, piece.id)}
+                    onTouchMove={(e) => isTouchDevice && handleTouchMove(e)}
+                    onTouchEnd={(e) => isTouchDevice && handleTouchEnd(e, piece.id)}
+                    onDragOver={!isTouchDevice ? handleDragOver : undefined}
+                    onDrop={!isTouchDevice ? (e) => handleDrop(e, piece.id) : undefined}
                     style={{
                       backgroundImage: `url(${piece.imageUrl})`,
                       backgroundSize: `${difficulty * 100}% ${difficulty * 100}%`,
                       backgroundPosition: `${piece.x}% ${piece.y}%`,
-                      borderRadius: '8px',
+                      borderRadius: isTouchDevice ? '6px' : '8px',
+                      minHeight: isTouchDevice ? '80px' : 'auto',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      WebkitTouchCallout: 'none',
+                      WebkitTapHighlightColor: 'transparent',
+                      touchAction: 'manipulation',
                     }}
                   >
                     <div
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, piece.id)}
-                      onDragEnd={handleDragEnd}
+                      draggable={!isTouchDevice}
+                      onDragStart={!isTouchDevice ? (e) => handleDragStart(e, piece.id) : undefined}
+                      onDragEnd={!isTouchDevice ? handleDragEnd : undefined}
                       className={`w-full h-full rounded-lg border-2 transition-colors duration-200 ${
                         isSelected ? 'border-yellow-400' : 'border-white/50 hover:border-yellow-400'
-                      }`}                    />
+                      }`}
+                      style={{
+                        pointerEvents: isTouchDevice ? 'none' : 'auto',
+                      }}
+                    />
                   </div>
                 );
               })}
@@ -569,38 +635,16 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({  topic,
           )}
         </div>
       </div>      {/* Bottom Controls - Better organized layout */}
-      <div className="flex flex-col items-center gap-4 mt-6">
-        {/* Primary Action Buttons Row */}
+      <div className="flex flex-col items-center gap-4 mt-6">        {/* Primary Action Buttons Row */}
         <div className="flex items-center justify-center gap-4">
-          {/* Preview button - only show for history mode OR premium users in culture mode */}
-          {(topic === 'history' || (topic === 'culture' && user?.isPremium)) && (
-            <button
-              onClick={showPreviewImage}
-              className={`flex items-center gap-2 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 ${
-                topic === 'culture' && user?.isPremium 
-                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' 
-                  : 'bg-white/80 text-gray-700'
-              }`}
-            >
-              <Eye className="w-5 h-5" />
-              <span>{t('game.preview')}</span>
-              {topic === 'culture' && user?.isPremium && (
-                <Crown className="w-4 h-4 ml-1" />
-              )}
-            </button>
-          )}
-          
-          {/* Show locked preview button for non-premium users in culture mode */}
-          {topic === 'culture' && !user?.isPremium && (
-            <button
-              onClick={showPreviewImage}
-              className="flex items-center gap-2 bg-gray-300/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg cursor-not-allowed opacity-60"
-            >
-              <Eye className="w-5 h-5" />
-              <span>{t('game.preview')}</span>
-              <Crown className="w-4 h-4 ml-1 text-yellow-500" />
-            </button>
-          )}
+          {/* Preview button - now available for all users in all modes */}
+          <button
+            onClick={showPreviewImage}
+            className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-gray-700"
+          >
+            <Eye className="w-5 h-5" />
+            <span>{t('game.preview')}</span>
+          </button>
           
           <button
             onClick={resetPuzzle}
